@@ -1,0 +1,158 @@
+---
+title: "wordle"
+author: "cc"
+format: html
+---
+
+### Wordle Assignment!
+
+# STEP 1 - Load in the data files 
+
+```{r}
+collins <- "/Users/cgc2437/Downloads/collins-scrabble-words-2019.txt"
+goog <- "/Users/cgc2437/Downloads/google-10000-english-usa-no-swears.txt"
+load_dictionary <- function(filename) {
+  read.csv(file = filename)
+}
+
+load_dictionary(filename = collins)
+load_dictionary(filename = goog)
+
+valid_list <- load_dictionary(collins)
+solution_list <- load_dictionary(goog)
+
+str(valid_list)
+str(solution_list)
+```
+
+# STEP 2 - Validating the Solution list
+```{r}
+## Changing from data frame to character vector
+
+solution_list <- solution_list$word
+valid_list <- valid_list$word
+
+testlist <- intersect(solution_list, valid_list) # trying it out first before overwriting solution_list
+length(testlist) # okay good! Length 8336 
+
+solution_list <- intersect(solution_list, valid_list) 
+#as.character(solution_list)
+```
+
+# STEP 3 - Picking a Solution
+```{r}
+
+pick_solution <- function(solution_list) {
+  solution_list <- solution_list[nchar(solution_list) == 5] # keeping only the five letter words in solution_list
+  solution_word <- sample(solution_list, size = 1) #now sampling from solution list
+  letters <- strsplit(solution_word, "")[[1]] #split into single characters
+  return(letters)
+}
+  
+solution <- pick_solution(solution_list)
+solution
+
+### what does this mean -?As a bonus, you might include a second argument for your pick_solution() function called “word_length” that makes your function flexible enough to select a solution word that is something other than 5 characters long.
+
+```
+
+
+# STEP 4
+```{r} 
+
+#| eval: false 
+
+#First have to make function evaluate_guess so that it can be passed into play_wordle later
+
+
+
+evaluate_guess <- function(guess, solution) {
+  
+  wordlength <- length(solution)
+  guess <- tolower(guess)
+  solution <- tolower(solution)
+  
+  response <- rep("-", wordlength)
+  
+  # first pass through: exact matches to solution
+  for (i in 1:wordlength) {
+    if (guess[i] == solution[i]) {
+      response[i] <- "G"
+      solution[i] <- "-" 
+    }
+  }
+  
+  # going through again to mark letters in wrong position
+  for (i in 1:wordlength) {
+    if (response[i] != "G") {
+      index <- match(guess[i], solution)
+      if (!is.na(index)) {
+        response[i] <- "Y"
+        solution[index] <- "-"
+      }
+    }
+  }
+  
+response
+}
+
+
+play_wordle <- function(solution, valid_list, num_guesses = 6){
+  
+  solution <- toupper(paste(solution, collapse = ""))
+word_length <- nchar(solution)[1] # had to store word_length as not acting on a vector of letters, it was messing with the wordle output
+  
+  print("Welcome to Bootleg Wordle! In this game, you have 6 total attempts to guess a mystery five-letter-word.")
+  cat("G = correct letter & position\n")
+  cat("Y = correct letter, wrong position\n")
+  cat("- = letter not in word\n\n")
+  
+  guessCnt <- 0 
+  lettersLeft <- LETTERS
+  
+  while (guessCnt < num_guesses) {
+    
+    print(paste("Letters remaining to be used:", 
+                paste(lettersLeft, collapse = " ")))
+    
+    guessCnt <- guessCnt + 1
+    
+   guessp <- readline(paste0("Enter your guess #", guessCnt, " here: "))
+guessp <- trimws(toupper(as.character(guessp)))
+
+while (length(guessp) != 1 || nchar(guessp)[1] != word_length) {
+  guessp <- readline(paste0("Guess must have ", word_length, " characters: "))
+  guessp <- trimws(toupper(as.character(guessp)))
+}
+    
+    guess <- strsplit(guessp, "")[[1]]
+    
+    # evaluate guess
+    response <- evaluate_guess(guessp, solution)
+    
+    # update keyboard remaining
+    lettersLeft <- setdiff(lettersLeft, guess)
+    
+    # print out result of round
+    print(paste(guess, collapse = " "))
+    print(paste(response, collapse = " "))
+    
+    if (all(response == "G")) {
+      print("You won Bootleg Wordle!")
+      return(guessCnt)
+    }
+  }
+  
+  print(paste("You lost! The word was", solution))
+  
+} 
+
+play_wordle(solution, valid_list)  
+
+
+```    
+  
+  
+  
+  
+  
